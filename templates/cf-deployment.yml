@@ -1719,7 +1719,6 @@ update:
 resource_pools:
   - name: medium_z1
     network: cf1
-    size: (( auto ))
     stemcell: (( meta.stemcell ))
     cloud_properties:
       name: random

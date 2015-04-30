@@ -6,5 +6,5 @@ infrastructure=$1
 shift
 
 spiff merge \
-  $templates/cf-deployment.yml \
+  $templates/dummy-deployment.yml \
   $*

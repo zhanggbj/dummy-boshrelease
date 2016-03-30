@@ -73,7 +73,13 @@ resources:
     access_key_id: {{s3_access_key_id}}
     secret_access_key: {{s3_secret_access_key}}
 
-
+- name: release-version-semver
+  type: semver
+  source:
+    key:               release-current-version
+    bucket:            {{s3_pipeline_bucket}}
+    access_key_id:     {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
 
 jobs:
 - name: build-candidate

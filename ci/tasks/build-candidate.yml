@@ -1,0 +1,10 @@
+---
+platform: linux
+image: docker:///cloudfoundry/bosh-lite-ci
+inputs:
+  - name: dummy-release
+  - name: version-semver
+outputs:
+  - name: candidate
+run:
+  path: dummy-release/ci/tasks/build-candidate.sh

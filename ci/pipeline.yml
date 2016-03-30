@@ -1,0 +1,105 @@
+resources:
+- name: dummy-release-in
+  type: git
+  source:
+#    uri: git@github.com:jianqiu/bosh-softlayer-cpi-release-2.git
+#    uri: git@github.com:jianqiu/pivotal-cf-experimental/dummy-boshrelease.git
+#    uri: https://github.com/starkandwayne/concourse-tutorial.git
+    uri: https://github.com/zhanggbj/bosh-dummy-release.git
+    branch: master
+    private_key: {{github_promote_private_key}}
+    ignore_paths:
+        - .final_builds/**/*.yml
+        - releases/**/*.yml
+
+- name: version-semver
+  type: semver
+  source:
+    key:               current-version # dev-release version
+    bucket:            {{s3_pipeline_bucket}}
+    access_key_id:     {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+
+- name: dummy-dev-artifacts
+  type: s3
+  source:
+    regexp: dummy-dev\.tgz
+    bucket: {{s3_pipeline_bucket}}
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+
+- name: bosh-release
+  type: s3
+  source:
+      bucket: bosh-softlayer-cpi-stemcells
+      regexp: bosh-236\+dev\.([0-9.]+)\.tgz
+      access_key_id: {{s3_access_key_id}}
+      secret_access_key: {{s3_secret_access_key}}
+
+- name: bosh-init
+  type: s3
+  source:
+    regexp: bosh-init-([0-9.]+)-linux-amd64
+    bucket: bosh-softlayer-cpi-stemcells
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+
+
+- name: softlayer-ubuntu-stemcell
+  type: s3
+  source:
+    bucket: bosh-softlayer-cpi-stemcells
+    regexp: light-bosh-stemcell-([0-9.]+)-softlayer-esxi-ubuntu-trusty-go_agent\.tgz
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+
+- name: bosh-cpi-release-in
+  type: s3
+  source:
+    bucket: bosh-softlayer-cpi-stemcells
+    regexp: bosh-softlayer-cpi-([0-9.]+)\.tgz
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+
+jobs:
+- name: build-candidate
+  serial: true
+  plan:
+  - aggregate:
+    - {trigger: false, get: dummy-release, resource: dummy-release-in}
+    - {trigger: false, get: version-semver, params: {bump: patch}}
+
+  - put: version-semver
+    params: {file: version-semver/number}
+
+  - task: build
+    file: dummy-release/ci/tasks/build-candidate.yml
+
+  - put: dummy-dev-artifacts
+    params: {from: candidate/.*\.tgz}
+
+- name: verify-candidate
+  plan:
+  - aggregate:
+    - {trigger: true,  passed: [build-candidate], get: dummy-dev-artifacts}
+    - {trigger: false,                            get: bosh-cpi-release, resource: bosh-cpi-release-in}
+    - {trigger: false,                            get: dummy-release, resource: dummy-release-in}
+    - {trigger: false,                            get: bosh-init}
+    - {trigger: false,                            get: stemcell, resource: softlayer-ubuntu-stemcell}
+    - {trigger: true,  passed: [build-candidate], get: version-semver, resource: version-semver}
+    - {trigger: false,                            get: bosh-release}
+
+  - task: setup-director
+    file: dummy-release/ci/tasks/setup-director.yml
+    config:
+      params:
+        BASE_OS:                    ubuntu
+        SL_USERNAME:                {{softlayer_username}}
+        SL_API_KEY:                 {{softlayer_api_key}}
+        SL_DATACENTER:              {{softlayer_datacenter}}
+        SL_VLAN_PUBLIC:             {{softlayer_vlan_public}}
+        SL_VLAN_PRIVATE:            {{softlayer_vlan_private}}
+        SL_VM_NAME_PREFIX:          {{softlayer_director_name_prefix}}
+
+  - task: teardown-director
+    file: dummy-release/ci/tasks/teardown-director.yml

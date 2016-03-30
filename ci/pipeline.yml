@@ -2,9 +2,6 @@ resources:
 - name: dummy-release-in
   type: git
   source:
-#    uri: git@github.com:jianqiu/bosh-softlayer-cpi-release-2.git
-#    uri: git@github.com:jianqiu/pivotal-cf-experimental/dummy-boshrelease.git
-#    uri: https://github.com/starkandwayne/concourse-tutorial.git
     uri: https://github.com/zhanggbj/dummy-boshrelease.git
     branch: master
     private_key: {{github_promote_private_key}}
@@ -61,6 +58,23 @@ resources:
     access_key_id: {{s3_access_key_id}}
     secret_access_key: {{s3_secret_access_key}}
 
+- name: dummy-release-out
+  type: git
+  source:
+    uri: git@github.com:zhanggbj/dummy-boshrelease.git
+    branch: master
+    private_key: {{github_promote_private_key}}
+
+- name: dummy-final-artifacts
+  type: s3
+  source:
+    regexp: dummy-([0-9.]+)\.tgz
+    bucket: {{s3_pipeline_bucket}}
+    access_key_id: {{s3_access_key_id}}
+    secret_access_key: {{s3_secret_access_key}}
+
+
+
 jobs:
 - name: build-candidate
   serial: true
@@ -103,3 +117,27 @@ jobs:
 
   - task: teardown-director
     file: dummy-release/ci/tasks/teardown-director.yml
+
+- name: promote-candidate
+  plan:
+  - aggregate:
+    - {trigger: true,  get: dummy-dev-artifacts, passed: [verify-candidate]}
+    - {trigger: false, get: dummy-release, resource: dummy-release-out}
+    - {trigger: false, get: release-version-semver, params: {bump: major}}
+
+  - task: promote
+    file: dummy-release/ci/tasks/promote-candidate.yml
+    config:
+      params:
+        S3_ACCESS_KEY_ID:     {{s3_access_key__primary}}
+        S3_SECRET_ACCESS_KEY: {{s3_secret_key__primary}}
+
+  - put: dummy-release-out
+    params: {repository: promoted/repo, rebase: true, tag_prefix: "v", tag: promoted/integer_version}
+
+  - put: release-version-semver
+    params: {file: release-version-semver/number}
+
+  - put: dummy-final-artifacts
+    params: {from: promoted/repo/releases/dummy-release/.*\.tgz}
+

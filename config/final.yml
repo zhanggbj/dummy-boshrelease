@@ -1,7 +1,13 @@
+#---
+#final_name: dummy
+#blobstore:
+#  provider: s3
+#  options:
+#    blobstore_path: /tmp/
+#min_cli_version: 1.5.0.pre.891
 ---
 final_name: dummy
 blobstore:
-  provider: local
+  provider: s3
   options:
-    blobstore_path: /tmp/
-min_cli_version: 1.5.0.pre.891
+    bucket_name: dummy-release-blobs

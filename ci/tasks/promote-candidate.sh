@@ -4,8 +4,8 @@ set -e -x
 
 source dummy-release/ci/tasks/utils.sh
 
-check_param s3_access_key_id
-check_param s3_secret_access_key
+check_param S3_ACCESS_KEY_ID
+check_param S3_SECRET_ACCESS_KEY
 
 source /etc/profile.d/chruby.sh
 chruby 2.1.2
@@ -26,11 +26,9 @@ pushd promoted/repo
 ---
 blobstore:
   s3:
-    access_key_id: $s3_access_key_id
-    secret_access_key: $s3_secret_access_key
+    access_key_id: $S3_ACCESS_KEY_ID
+    secret_access_key: $S3_SECRET_ACCESS_KEY
 EOF
-
-  cat config/private.yml
   set -x
 
   echo "using bosh CLI version..."

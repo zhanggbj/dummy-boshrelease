@@ -5,7 +5,7 @@ resources:
 #    uri: git@github.com:jianqiu/bosh-softlayer-cpi-release-2.git
 #    uri: git@github.com:jianqiu/pivotal-cf-experimental/dummy-boshrelease.git
 #    uri: https://github.com/starkandwayne/concourse-tutorial.git
-    uri: https://github.com/zhanggbj/bosh-dummy-release.git
+    uri: https://github.com/zhanggbj/dummy-boshrelease.git
     branch: master
     private_key: {{github_promote_private_key}}
     ignore_paths:

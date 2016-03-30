@@ -26,8 +26,8 @@ pushd promoted/repo
 ---
 blobstore:
   s3:
-    access_key_id: $S3_ACCESS_KEY_ID
-    secret_access_key: $S3_SECRET_ACCESS_KEY
+    access_key_id: $s3_access_key_id
+    secret_access_key: $s3_secret_access_key
 EOF
   set -x
 
